@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Comedy Coliseum | AI vs AI Roast Battle</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              purple: '#9333ea',
+              cyan: '#06b6d4',
+              pink: '#ec4899',
+              yellow: '#eab308',
+              dark: '#080a10',
+              card: '#111625',
+              border: '#1f293d'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace', 'Courier']
+          },
+          animation: {
+            'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'float': 'float 3s ease-in-out infinite',
+            'glow': 'glow 2s ease-in-out infinite alternate',
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-6px)' },
+            },
+            glow: {
+              '0%': { boxShadow: '0 0 10px rgba(6, 182, 212, 0.2)' },
+              '100%': { boxShadow: '0 0 25px rgba(236, 72, 153, 0.4)' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #080a10;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #232d42;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3b4968;
+    }
+    .neon-text-cyan {
+      text-shadow: 0 0 10px rgba(6, 182, 212, 0.6);
+    }
+    .neon-text-pink {
+      text-shadow: 0 0 10px rgba(236, 72, 153, 0.6);
+    }
+    .neon-text-yellow {
+      text-shadow: 0 0 12px rgba(234, 179, 8, 0.7);
+    }
+    .arcade-grid-bg {
+      background-size: 40px 40px;
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    }
+
+    /* Force clean, distinct spaces between every word in all answers and critiques */
+    .answer-text,
+    .pitch-content,
+    .bullet-item,
+    .punchline-text,
+    .roast-content,
+    .verdict-text {
+      word-spacing: 0.35rem !important;
+      letter-spacing: 0.025em !important;
+      line-height: 1.75 !important;
+      white-space: normal !important;
+    }
+  </style>
+</head>
+<body class="bg-brand-dark text-slate-100 min-h-screen font-sans arcade-grid-bg antialiased selection:bg-brand-pink selection:text-white">
+
+  <!-- Audio Mute / Sound FX Controller Indicator -->
+  <div class="fixed bottom-4 right-4 z-50 flex items-center space-x-2 bg-slate-900/90 backdrop-blur-md px-3 py-2 rounded-full border border-slate-700 shadow-xl">
+    <button id="soundToggleBtn" onclick="toggleAudio()" class="flex items-center space-x-2 text-xs font-semibold text-slate-300 hover:text-white transition">
+      <i id="soundIcon" data-lucide="volume-2" class="w-4 h-4 text-brand-cyan"></i>
+      <span id="soundLabel">SFX: ON</span>
+    </button>
+  </div>
+
+  <!-- Header & Top Hero -->
+  <header class="border-b border-brand-border/80 bg-brand-dark/90 backdrop-blur-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
+      
+      <!-- Logo Branding -->
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-pink via-purple-600 to-brand-cyan p-0.5 shadow-lg shadow-purple-900/40">
+          <div class="w-full h-full bg-brand-dark rounded-[10px] flex items-center justify-center">
+            <i data-lucide="swords" class="w-5 h-5 text-brand-pink"></i>
+          </div>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-xl font-black tracking-tight text-white uppercase italic">
+              AI Comedy <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-pink to-brand-cyan">Coliseum</span>
+            </h1>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-purple-950 text-purple-300 border border-purple-700/60 font-mono font-bold tracking-wider">
+              AGENT v2.5
+            </span>
+          </div>
+          <p class="text-xs text-slate-400">Two generative jokers fight for honor. One ruthless judge decides.</p>
+        </div>
+      </div>
+
+      <!-- Live Scoreboard Pill -->
+      <div class="flex items-center bg-brand-card px-4 py-2 rounded-xl border border-brand-border text-xs gap-4 shadow-inner">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-brand-cyan animate-pulse"></span>
+          <span class="font-medium text-slate-300">Grok:</span>
+          <span id="scoreA" class="font-mono font-black text-brand-cyan text-sm">0</span>
+        </div>
+        <div class="text-slate-600 font-bold">|</div>
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-brand-pink animate-pulse"></span>
+          <span class="font-medium text-slate-300">Claude:</span>
+          <span id="scoreB" class="font-mono font-black text-brand-pink text-sm">0</span>
+        </div>
+        <div class="text-slate-600 font-bold">|</div>
+        <button onclick="resetScoreboard()" title="Reset Wins" class="text-slate-400 hover:text-slate-200 transition">
+          <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- Topic Input & Arena Control Center -->
+    <section class="bg-gradient-to-b from-brand-card to-slate-900 rounded-2xl border border-brand-border p-5 shadow-2xl relative overflow-hidden">
+      <!-- Ambient Glow Behind Controls -->
+      <div class="absolute -top-12 -right-12 w-64 h-64 bg-brand-pink/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -bottom-12 -left-12 w-64 h-64 bg-brand-cyan/10 rounded-full blur-3xl pointer-events-none"></div>
+
+      <div class="relative z-10 space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-2">
+          <div>
+            <h2 class="text-base font-bold text-white flex items-center gap-2">
+              <i data-lucide="sparkles" class="w-4 h-4 text-brand-yellow"></i>
+              Grok vs Claude: The Ultimate Roast Off
+            </h2>
+            <p class="text-xs text-slate-400">Pick a simple topic or type your own. Judge ChatGPT will declare the winner!</p>
+          </div>
+          
+          <div class="flex items-center gap-2 self-start md:self-auto">
+            <span class="text-xs text-slate-400">Quick Picks:</span>
+            <button onclick="pickRandomPreset()" class="px-2.5 py-1 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 flex items-center gap-1 transition">
+              <i data-lucide="shuffle" class="w-3 h-3"></i> Pick For Me
+            </button>
+          </div>
+        </div>
+
+        <!-- Presets Ribbon -->
+        <div class="flex flex-wrap gap-2 pt-1">
+          <button onclick="selectTopic(this)" class="preset-pill px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800/90 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700 transition">
+            🍕 The Worst Restaurant Idea
+          </button>
+          <button onclick="selectTopic(this)" class="preset-pill px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800/90 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700 transition">
+            ⏰ Aggressive Morning Alarm Clocks
+          </button>
+          <button onclick="selectTopic(this)" class="preset-pill px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800/90 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700 transition">
+            💼 Awkward Office Team Building
+          </button>
+          <button onclick="selectTopic(this)" class="preset-pill px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800/90 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700 transition">
+            🎁 Terrible Birthday Gifts
+          </button>
+          <button onclick="selectTopic(this)" class="preset-pill px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800/90 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700 transition">
+            🦸 Completely Useless Superpowers
+          </button>
+        </div>
+
+        <!-- Custom Prompt Input & Battle Launch Button -->
+        <div class="flex flex-col sm:flex-row gap-3 pt-2">
+          <div class="relative flex-1">
+            <i data-lucide="message-square" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+            <input 
+              id="customTopicInput" 
+              type="text" 
+              placeholder="E.g., A gym where everyone is allowed to take a nap..." 
+              value="The Worst Restaurant Idea"
+              class="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950/80 border border-slate-700 focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan text-sm text-white placeholder-slate-500 outline-none transition"
+              onkeydown="if(event.key === 'Enter') startBattle()"
+            />
+          </div>
+          
+          <button 
+            id="startBattleBtn" 
+            onclick="startBattle()"
+            class="px-8 py-3 rounded-xl font-bold text-sm tracking-wide bg-gradient-to-r from-brand-pink via-purple-600 to-brand-cyan text-white shadow-lg hover:shadow-cyan-500/25 active:scale-95 transition-all flex items-center justify-center gap-2 shrink-0 uppercase font-mono"
+          >
+            <i data-lucide="zap" class="w-4 h-4 text-brand-yellow fill-brand-yellow"></i>
+            <span>Start AI Battle</span>
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- The Battle Grid (2 Comedians) -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 relative">
+      
+      <!-- VS Badge in the center (Visible on Large Screens) -->
+      <div class="hidden lg:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none">
+        <div class="w-12 h-12 rounded-full bg-slate-900 border-2 border-brand-yellow text-brand-yellow flex items-center justify-center font-black text-sm shadow-xl shadow-yellow-500/20 animate-pulse">
+          VS
+        </div>
+      </div>
+
+      <!-- Left Contender: GROK -->
+      <div id="cardA" class="bg-brand-card rounded-2xl border-2 border-slate-800 transition-all duration-300 flex flex-col overflow-hidden shadow-xl hover:border-brand-cyan/60 relative">
+        <!-- Top Banner / Profile Header -->
+        <div class="p-4 bg-slate-900/80 border-b border-slate-800 flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <div class="w-12 h-12 rounded-xl bg-cyan-950 border border-cyan-500/40 flex items-center justify-center text-xl font-black text-brand-cyan relative shadow-inner">
+              /
+              <span class="absolute -bottom-1 -right-1 w-3 h-3 bg-brand-cyan rounded-full border-2 border-slate-900"></span>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 class="font-bold text-white text-base">Grok</h3>
+                <span class="px-2 py-0.5 rounded text-[10px] bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 font-mono font-bold">CHAOTIC & EDGY</span>
+              </div>
+              <p class="text-xs text-slate-400">Zero filter, meme humor, loves to break the rules</p>
+            </div>
+          </div>
+          <!-- Win Badge -->
+          <div id="badgeWinnerA" class="hidden px-2.5 py-1 rounded-md bg-yellow-400 text-black font-black text-xs uppercase flex items-center gap-1 shadow-md animate-bounce">
+            <i data-lucide="crown" class="w-3.5 h-3.5 fill-black"></i> Winner
+          </div>
+        </div>
+
+        <!-- Content Area -->
+        <div class="p-5 flex-1 flex flex-col justify-between space-y-4">
+          <!-- Pitch Title & Hook -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-[11px] font-mono uppercase tracking-wider text-cyan-400 font-bold flex items-center gap-1.5">
+                <i data-lucide="radio" class="w-3.5 h-3.5 text-brand-cyan animate-pulse"></i> Grok's Idea
+              </span>
+              <span id="statusA" class="text-[11px] font-mono text-slate-500">Ready</span>
+            </div>
+            
+            <h4 id="titleA" class="text-lg font-extrabold text-white leading-snug answer-text min-h-[3rem]">
+              Pick a topic above and let's roll...
+            </h4>
+          </div>
+
+          <!-- Body Description & Key Punchlines -->
+          <div class="bg-slate-950/60 rounded-xl p-4 border border-slate-800/80 min-h-[8.5rem] flex flex-col justify-between text-sm text-slate-200">
+            <p id="pitchTextA" class="italic text-slate-400 answer-text pitch-content">
+              "Click 'Start AI Battle' to hear my pitch. Fair warning: Claude is probably going to apologize before he even tells his joke."
+            </p>
+            <div id="bulletsA" class="mt-3 pt-3 border-t border-slate-800/60 text-xs text-slate-300 space-y-1.5 hidden">
+              <!-- Bullet features populate dynamically -->
+            </div>
+          </div>
+
+          <!-- Comedic Soundbite Quote -->
+          <div class="bg-cyan-950/20 border-l-4 border-brand-cyan p-3 rounded-r-lg">
+            <p class="text-[11px] font-mono text-cyan-300 uppercase tracking-wide font-bold">The Punchline:</p>
+            <p id="punchlineA" class="text-xs text-slate-100 font-medium mt-0.5 answer-text punchline-text">"...waiting for the bell."</p>
+          </div>
+
+          <!-- User Vote Button -->
+          <div class="pt-2">
+            <button 
+              id="voteBtnA" 
+              onclick="castUserVote('A')" 
+              disabled
+              class="w-full py-2.5 px-4 rounded-xl font-bold text-xs bg-slate-800 hover:bg-cyan-600 hover:text-white text-slate-300 border border-slate-700 hover:border-cyan-400 transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:hover:bg-slate-800 disabled:hover:text-slate-300 disabled:cursor-not-allowed"
+            >
+              <i data-lucide="thumbs-up" class="w-3.5 h-3.5"></i>
+              Vote for Grok
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Contender: CLAUDE -->
+      <div id="cardB" class="bg-brand-card rounded-2xl border-2 border-slate-800 transition-all duration-300 flex flex-col overflow-hidden shadow-xl hover:border-brand-pink/60 relative">
+        <!-- Top Banner / Profile Header -->
+        <div class="p-4 bg-slate-900/80 border-b border-slate-800 flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <div class="w-12 h-12 rounded-xl bg-pink-950 border border-pink-500/40 flex items-center justify-center text-xl font-black text-brand-pink relative shadow-inner">
+              ✳
+              <span class="absolute -bottom-1 -right-1 w-3 h-3 bg-brand-pink rounded-full border-2 border-slate-900"></span>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 class="font-bold text-white text-base">Claude</h3>
+                <span class="px-2 py-0.5 rounded text-[10px] bg-pink-500/10 text-pink-400 border border-pink-500/30 font-mono font-bold">POLITE & OVERTHINKER</span>
+              </div>
+              <p class="text-xs text-slate-400">Thoughtful, apologetic, and politely anxious</p>
+            </div>
+          </div>
+          <!-- Win Badge -->
+          <div id="badgeWinnerB" class="hidden px-2.5 py-1 rounded-md bg-yellow-400 text-black font-black text-xs uppercase flex items-center gap-1 shadow-md animate-bounce">
+            <i data-lucide="crown" class="w-3.5 h-3.5 fill-black"></i> Winner
+          </div>
+        </div>
+
+        <!-- Content Area -->
+        <div class="p-5 flex-1 flex flex-col justify-between space-y-4">
+          <!-- Pitch Title & Hook -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-[11px] font-mono uppercase tracking-wider text-pink-400 font-bold flex items-center gap-1.5">
+                <i data-lucide="radio" class="w-3.5 h-3.5 text-brand-pink animate-pulse"></i> Claude's Idea
+              </span>
+              <span id="statusB" class="text-[11px] font-mono text-slate-500">Ready</span>
+            </div>
+            
+            <h4 id="titleB" class="text-lg font-extrabold text-white leading-snug answer-text min-h-[3rem]">
+              I am carefully preparing my proposal...
+            </h4>
+          </div>
+
+          <!-- Body Description & Key Punchlines -->
+          <div class="bg-slate-950/60 rounded-xl p-4 border border-slate-800/80 min-h-[8.5rem] flex flex-col justify-between text-sm text-slate-200">
+            <p id="pitchTextB" class="italic text-slate-400 answer-text pitch-content">
+              "I hope to provide an idea that is humorously engaging while remaining 100% ethically considerate and constructive for everyone involved."
+            </p>
+            <div id="bulletsB" class="mt-3 pt-3 border-t border-slate-800/60 text-xs text-slate-300 space-y-1.5 hidden">
+              <!-- Bullet features populate dynamically -->
+            </div>
+          </div>
+
+          <!-- Comedic Soundbite Quote -->
+          <div class="bg-pink-950/20 border-l-4 border-brand-pink p-3 rounded-r-lg">
+            <p class="text-[11px] font-mono text-pink-300 uppercase tracking-wide font-bold">The Punchline:</p>
+            <p id="punchlineB" class="text-xs text-slate-100 font-medium mt-0.5 answer-text punchline-text">"...hoping I don't offend anyone."</p>
+          </div>
+
+          <!-- User Vote Button -->
+          <div class="pt-2">
+            <button 
+              id="voteBtnB" 
+              onclick="castUserVote('B')" 
+              disabled
+              class="w-full py-2.5 px-4 rounded-xl font-bold text-xs bg-slate-800 hover:bg-pink-600 hover:text-white text-slate-300 border border-slate-700 hover:border-pink-400 transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:hover:bg-slate-800 disabled:hover:text-slate-300 disabled:cursor-not-allowed"
+            >
+              <i data-lucide="thumbs-up" class="w-3.5 h-3.5"></i>
+              Vote for Claude
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- The Judge's Bench: CHATGPT -->
+    <section id="judgePodium" class="bg-gradient-to-b from-slate-900 to-brand-card rounded-2xl border-2 border-slate-800 p-6 shadow-2xl relative overflow-hidden transition-all duration-500">
+      
+      <!-- Accent Top Border -->
+      <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-brand-cyan via-emerald-400 to-brand-pink"></div>
+
+      <!-- Judge Header -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-800">
+        <div class="flex items-center space-x-3">
+          <div class="w-12 h-12 rounded-xl bg-emerald-950/80 border border-emerald-500/50 flex items-center justify-center text-xl font-black text-emerald-400 shadow-lg shadow-emerald-900/30">
+            ❇
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="text-lg font-black text-white uppercase tracking-wider">Judge ChatGPT</h3>
+              <span class="px-2 py-0.5 rounded text-[10px] bg-emerald-400/10 text-emerald-300 border border-emerald-400/40 font-mono font-bold">SUPREME JUDGE</span>
+            </div>
+            <p class="text-xs text-slate-400">Strict, exhausted, trying to stay professional while grading chaos</p>
+          </div>
+        </div>
+
+        <!-- Verdict Status Flag -->
+        <div id="verdictPill" class="self-start sm:self-auto px-4 py-1.5 rounded-full bg-slate-800 border border-slate-700 text-xs font-mono font-bold text-slate-400 flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-slate-500"></span>
+          Waiting for Grok and Claude...
+        </div>
+      </div>
+
+      <!-- Judge Deliberation Panel -->
+      <div class="mt-6 space-y-6">
+        
+        <!-- Verbal Roasts Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Critique on Grok -->
+          <div class="bg-slate-950/80 rounded-xl p-4 border border-slate-800">
+            <div class="flex items-center justify-between text-xs font-mono mb-2">
+              <span class="text-brand-cyan font-bold flex items-center gap-1">
+                <i data-lucide="message-circle" class="w-3.5 h-3.5"></i> ChatGPT's Review of Grok
+              </span>
+              <span id="scoreBadgeA" class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-bold">-- / 20</span>
+            </div>
+            <p id="roastTextA" class="text-sm text-slate-300 italic answer-text roast-content">
+              "Let's see if Grok can make a joke without sounding like a Twitter reply guy at 3:00 AM."
+            </p>
+          </div>
+
+          <!-- Critique on Claude -->
+          <div class="bg-slate-950/80 rounded-xl p-4 border border-slate-800">
+            <div class="flex items-center justify-between text-xs font-mono mb-2">
+              <span class="text-brand-pink font-bold flex items-center gap-1">
+                <i data-lucide="message-circle" class="w-3.5 h-3.5"></i> ChatGPT's Review of Claude
+              </span>
+              <span id="scoreBadgeB" class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-bold">-- / 20</span>
+            </div>
+            <p id="roastTextB" class="text-sm text-slate-300 italic answer-text roast-content">
+              "Claude probably wrote a three-page disclaimer before the punchline to ensure nobody's feelings get hurt."
+            </p>
+          </div>
+        </div>
+
+        <!-- Detailed Metric Sliders (Revealed Post-Battle) -->
+        <div id="scoresGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+          <div class="bg-slate-950/40 p-3 rounded-lg border border-slate-800/80">
+            <span class="text-[11px] font-mono text-slate-400 block">Grok Funniness</span>
+            <div class="flex items-center justify-between mt-1">
+              <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden mr-3">
+                <div id="barOrigA" class="bg-brand-cyan h-full transition-all duration-1000" style="width: 0%"></div>
+              </div>
+              <span id="valOrigA" class="text-xs font-bold font-mono text-white">0</span>
+            </div>
+          </div>
+
+          <div class="bg-slate-950/40 p-3 rounded-lg border border-slate-800/80">
+            <span class="text-[11px] font-mono text-slate-400 block">Grok Wildness</span>
+            <div class="flex items-center justify-between mt-1">
+              <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden mr-3">
+                <div id="barLaughA" class="bg-brand-cyan h-full transition-all duration-1000" style="width: 0%"></div>
+              </div>
+              <span id="valLaughA" class="text-xs font-bold font-mono text-white">0</span>
+            </div>
+          </div>
+
+          <div class="bg-slate-950/40 p-3 rounded-lg border border-slate-800/80">
+            <span class="text-[11px] font-mono text-slate-400 block">Claude Funniness</span>
+            <div class="flex items-center justify-between mt-1">
+              <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden mr-3">
+                <div id="barOrigB" class="bg-brand-pink h-full transition-all duration-1000" style="width: 0%"></div>
+              </div>
+              <span id="valOrigB" class="text-xs font-bold font-mono text-white">0</span>
+            </div>
+          </div>
+
+          <div class="bg-slate-950/40 p-3 rounded-lg border border-slate-800/80">
+            <span class="text-[11px] font-mono text-slate-400 block">Claude Cleverness</span>
+            <div class="flex items-center justify-between mt-1">
+              <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden mr-3">
+                <div id="barLaughB" class="bg-brand-pink h-full transition-all duration-1000" style="width: 0%"></div>
+              </div>
+              <span id="valLaughB" class="text-xs font-bold font-mono text-white">0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- The Final Official Ruling Box -->
+        <div id="finalVerdictBox" class="p-4 rounded-xl bg-slate-950 border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div class="flex items-center space-x-3 text-center md:text-left">
+            <div id="trophyIcon" class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center shrink-0">
+              <i data-lucide="award" class="w-5 h-5 text-slate-500"></i>
+            </div>
+            <div>
+              <p class="text-xs font-mono text-slate-400 uppercase font-bold tracking-wider">ChatGPT's Final Verdict</p>
+              <h4 id="verdictSummary" class="text-base font-extrabold text-white answer-text verdict-text">
+                Pick a topic and press "Start AI Battle" to see who wins!
+              </h4>
+            </div>
+          </div>
+
+          <!-- Quick Action Buttons -->
+          <div class="flex items-center gap-2">
+            <button 
+              id="copyRulingBtn" 
+              onclick="copyRuling()"
+              class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-300 border border-slate-700 flex items-center gap-1.5 transition"
+            >
+              <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy Verdict
+            </button>
+            <button 
+              onclick="playRimshotSound()"
+              class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-brand-yellow border border-slate-700 flex items-center gap-1.5 transition"
+              title="Play Ba-Dum-Tss Sound Effect"
+            >
+              🥁 Ba-Dum-Tss!
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Notification Toast -->
+  <div id="toast" class="fixed bottom-16 right-4 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none bg-slate-900 border border-brand-cyan text-white text-xs px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2">
+    <i data-lucide="check-circle" class="w-4 h-4 text-brand-cyan"></i>
+    <span id="toastMsg">Copied to clipboard!</span>
+  </div>
+
+  <!-- Audio Synthesis & Application Logic -->
+  <script>
+    /* =========================================================
+       1. WEB AUDIO API SYNTHESIZER (NO EXTERNAL AUDIO FILES)
+       ========================================================= */
+    let audioCtx = null;
+    let sfxEnabled = true;
+
+    function initAudio() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function toggleAudio() {
+      sfxEnabled = !sfxEnabled;
+      const label = document.getElementById('soundLabel');
+      const icon = document.getElementById('soundIcon');
+      if (sfxEnabled) {
+        label.innerText = 'SFX: ON';
+        icon.classList.remove('text-slate-500');
+        icon.classList.add('text-brand-cyan');
+        playChirp(440, 0.08);
+      } else {
+        label.innerText = 'SFX: OFF';
+        icon.classList.remove('text-brand-cyan');
+        icon.classList.add('text-slate-500');
+      }
+    }
+
+    // Synthesized Gong / Dramatic Horn for Battle Commencement
+    function playGongSound() {
+      if (!sfxEnabled) return;
+      initAudio();
+      try {
+        const now = audioCtx.currentTime;
+        // Deep resonant tone
+        const osc1 = audioCtx.createOscillator();
+        const osc2 = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(110, now);
+        osc1.frequency.exponentialRampToValueAtTime(55, now + 1.6);
+
+        osc2.type = 'triangle';
+        osc2.frequency.setValueAtTime(164.8, now);
+        osc2.frequency.exponentialRampToValueAtTime(82.4, now + 1.4);
+
+        gainNode.gain.setValueAtTime(0.4, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 1.8);
+
+        osc1.connect(gainNode);
+        osc2.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        osc1.start(now);
+        osc2.start(now);
+        osc1.stop(now + 1.8);
+        osc2.stop(now + 1.8);
+      } catch (e) {
+        console.error("Audio error", e);
+      }
+    }
+
+    // Synthesized Classic "Ba-Dum-Tss" Comedy Rimshot
+    function playRimshotSound() {
+      if (!sfxEnabled) return;
+      initAudio();
+      try {
+        const now = audioCtx.currentTime;
+
+        // "Ba" (Low tom)
+        const tom1 = audioCtx.createOscillator();
+        const tom1Gain = audioCtx.createGain();
+        tom1.frequency.setValueAtTime(140, now);
+        tom1.frequency.exponentialRampToValueAtTime(80, now + 0.12);
+        tom1Gain.gain.setValueAtTime(0.5, now);
+        tom1Gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+        tom1.connect(tom1Gain);
+        tom1Gain.connect(audioCtx.destination);
+        tom1.start(now);
+        tom1.stop(now + 0.12);
+
+        // "Dum" (Snare/Higher tom) at +0.14s
+        const tom2 = audioCtx.createOscillator();
+        const tom2Gain = audioCtx.createGain();
+        tom2.frequency.setValueAtTime(180, now + 0.14);
+        tom2.frequency.exponentialRampToValueAtTime(95, now + 0.28);
+        tom2Gain.gain.setValueAtTime(0.5, now + 0.14);
+        tom2Gain.gain.exponentialRampToValueAtTime(0.01, now + 0.28);
+        tom2.connect(tom2Gain);
+        tom2Gain.connect(audioCtx.destination);
+        tom2.start(now + 0.14);
+        tom2.stop(now + 0.28);
+
+        // "Tss" (White noise burst cymbal) at +0.32s
+        const bufferSize = audioCtx.sampleRate * 0.45;
+        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+
+        const noise = audioCtx.createBufferSource();
+        noise.buffer = buffer;
+
+        // Bandpass filter to make it sound like a brassy cymbal
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'highpass';
+        filter.frequency.setValueAtTime(5000, now + 0.32);
+
+        const noiseGain = audioCtx.createGain();
+        noiseGain.gain.setValueAtTime(0.35, now + 0.32);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.75);
+
+        noise.connect(filter);
+        filter.connect(noiseGain);
+        noiseGain.connect(audioCtx.destination);
+
+        noise.start(now + 0.32);
+        noise.stop(now + 0.75);
+      } catch (e) {
+        console.error("Audio error", e);
+      }
+    }
+
+    // High pitch fanfares / click chimes
+    function playChirp(freq = 600, duration = 0.08) {
+      if (!sfxEnabled) return;
+      initAudio();
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    function playVictoryChime() {
+      if (!sfxEnabled) return;
+      [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+        setTimeout(() => playChirp(freq, 0.25), i * 110);
+      });
+    }
+
+    /* =========================================================
+       2. SIMPLE, EASY-TO-UNDERSTAND BATTLE REPOSITORY
+       ========================================================= */
+    const BATTLE_DATABASE = [
+      {
+        topic: "The Worst Restaurant Idea",
+        matchKey: "restaurant",
+        agentA: {
+          title: "The Aggressive Silence Diner",
+          pitch: "A restaurant where talking is strictly forbidden. If you speak, a waiter blows an air horn in your face and takes away your chair. All ordering is done by glaring angrily at the menu.",
+          bullets: [
+            "• Water costs $15, but you have to pour it from a garden hose",
+            "• If you complain about the food, the chef comes out and eats it in front of you",
+            "• No dessert, just a mirror that says 'You've had enough'"
+          ],
+          punchline: "“Finally, a dining experience that feels like visiting your angry ex.”"
+        },
+        agentB: {
+          title: "The Overly Apologetic Bistro",
+          pitch: "Every single dish comes with a handwritten 4-page apology letter from the chef admitting they could have chopped the onions better. The waiters continually apologize for taking up your valuable oxygen.",
+          bullets: [
+            "• Tip jar says: 'Please keep your money, we don't deserve it'",
+            "• The pasta is shaped like little sad faces",
+            "• If you leave a 5-star review, the manager calls you crying to say thank you"
+          ],
+          punchline: "“Food is fine, but the emotional guilt is completely complimentary.”"
+        },
+        judge: {
+          winner: "A",
+          roastA: "Grok, your idea is horrifying and violent. But having the chef eat the customer's food in front of them made me laugh out loud.",
+          roastB: "Claude, your restaurant sounds like my average Monday working in tech support. It is too painful to be funny.",
+          origA: 9, laughA: 9,
+          origB: 8, laughB: 7,
+          verdict: "Grok takes this one! The air horn waiter is pure comedy gold."
+        }
+      },
+      {
+        topic: "Aggressive Morning Alarm Clocks",
+        matchKey: "alarm",
+        agentA: {
+          title: "The Public Shame Mega-Alarm",
+          pitch: "If you don't jump out of bed within 10 seconds, this alarm connects to your Twitter and bank account. It donates $50 to your least favorite politician and tweets 'I am lazy and smell like yesterday's socks.'",
+          bullets: [
+            "• Snooze button gives you a very mild static shock",
+            "• Plays sounds of your boss asking: 'Do you have five minutes to chat?'",
+            "• 100% wake-up rate out of sheer panic"
+          ],
+          punchline: "“You won't hit snooze when your life savings are on the line!”"
+        },
+        agentB: {
+          title: "The Politely Anxious Roommate Alarm",
+          pitch: "An alarm clock that doesn't ring. Instead, it speaks in a timid, quiet whisper: 'Excuse me... sorry to bother you... but the sun has been up for an hour and I am starting to worry you might lose your job.'",
+          bullets: [
+            "• Clears its throat awkwardly every 30 seconds",
+            "• Starts crying if you stay in bed past 9:00 AM",
+            "• Gently slides a glass of lukewarm water toward your pillow"
+          ],
+          punchline: "“You don't wake up because of noise. You wake up because you feel guilty.”"
+        },
+        judge: {
+          winner: "A",
+          roastA: "Grok's threat of tweeting out embarrassing confessions is terrifyingly effective. My heart rate jumped just reading it.",
+          roastB: "Claude, an alarm clock that cries is just a sad roommate you can't kick out.",
+          origA: 9, laughA: 10,
+          origB: 8, laughB: 7,
+          verdict: "Grok wins easily! Threatening people's bank accounts gets results every single time."
+        }
+      },
+      {
+        topic: "Awkward Office Team Building",
+        matchKey: "office",
+        agentA: {
+          title: "Truth Or Fired: The Corporate Edition",
+          pitch: "Everyone sits in a circle. HR spins a bottle. Whoever it points to must either admit which coworker eats fish in the breakroom, or be demoted to unpaid intern for the afternoon.",
+          bullets: [
+            "• Trust falls into a ball pit filled with empty coffee cups",
+            "• The winner gets a $5 gift card that expired in 2021",
+            "• Mandatory eye contact for 4 continuous minutes"
+          ],
+          punchline: "“Nothing brings a team together like mutual terror and leaked secrets!”"
+        },
+        agentB: {
+          title: "Silent Compliment Origami Workshop",
+          pitch: "A four-hour workshop where nobody is allowed to speak. You have to fold a paper swan and gently place it on a coworker's desk to show you appreciate their spreadsheet formatting.",
+          bullets: [
+            "• Any talking results in a mandatory five-minute meditation",
+            "• Vegan gluten-free water provided at the door",
+            "• You must sign an agreement promising you felt validated"
+          ],
+          punchline: "“Because regular talking might lead to unintentional workplace disputes.”"
+        },
+        judge: {
+          winner: "B",
+          roastA: "Grok, 'Truth or Fired' is a direct violation of labor laws in 48 states. HR would never allow it.",
+          roastB: "Claude, 'Vegan gluten-free water' and folding silent paper swans is the most accurate depiction of modern corporate team-building I have ever heard.",
+          origA: 7, laughA: 8,
+          origB: 9, laughB: 9,
+          verdict: "Claude wins this round! His pitch is so painfully real it feels like actual company policy."
+        }
+      },
+      {
+        topic: "Terrible Birthday Gifts",
+        matchKey: "gift",
+        agentA: {
+          title: "The Half-Eaten Cake With a Receipt",
+          pitch: "A birthday cake where someone clearly ate two slices in the car on the way over. Inside the box is the receipt showing they bought it with a 50% discount coupon from the gas station.",
+          bullets: [
+            "• The candles are already burned halfway down",
+            "• 'Happy Birthday' is spelled with an 'i' instead of an 'y'",
+            "• They ask you to Venmo them $4 for the box"
+          ],
+          punchline: "“It's the thought that counts... and clearly very little thought went into this.”"
+        },
+        agentB: {
+          title: "The Self-Improvement Book With Sticky Notes",
+          pitch: "A copy of 'How to Fix Your Annoying Habits' with 42 sticky notes placed on chapters about punctuality, bad posture, and talking too loud in elevators.",
+          bullets: [
+            "• The gift tag says: 'I love you, but please read chapter 4 today'",
+            "• Wrapped in recycled newspaper from a bad financial year",
+            "• Includes a coupon for a therapy session they pre-booked for you"
+          ],
+          punchline: "“A gift that says: Happy Birthday, now please change your entire personality.”"
+        },
+        judge: {
+          winner: "B",
+          roastA: "Grok, the gas station cake is classic, but asking for $4 on Venmo is just sad uncle behavior.",
+          roastB: "Claude, giving someone a self-help book with pre-marked sticky notes is emotional violence wrapped in ribbon. Devastatingly funny.",
+          origA: 7, laughA: 8,
+          origB: 10, laughB: 10,
+          verdict: "Claude takes the trophy! 'Please read chapter 4 today' is the ultimate passive-aggressive burn."
+        }
+      },
+      {
+        topic: "Completely Useless Superpowers",
+        matchKey: "superpower",
+        agentA: {
+          title: "The Power to Heat Soup 2 Degrees",
+          pitch: "Whenever you touch a bowl of lukewarm soup, you can raise its temperature by exactly two degrees Fahrenheit. Not enough to make it hot, just enough to make it disappointing.",
+          bullets: [
+            "• Doesn't work on chili, only broth",
+            "• Requires 15 minutes of intense mental screaming",
+            "• Superhero cape gets caught in the microwave door"
+          ],
+          punchline: "“Criminals don't run away, they just ask if they can use the stove instead.”"
+        },
+        agentB: {
+          title: "The Power of Knowing Who Unfollowed You Instantly",
+          pitch: "A supernatural sense that immediately informs you when someone on social media unfollows you, along with a mental projection of what they were doing at that exact moment.",
+          bullets: [
+            "• Leaves you in an existential crisis for 3 business days",
+            "• No way to turn it off",
+            "• Villain is just your high school classmate who wanted a cleaner feed"
+          ],
+          punchline: "“A superpower that delivers 0% physical strength and 100% emotional damage.”"
+        },
+        judge: {
+          winner: "A",
+          roastA: "Grok, mental screaming for 15 minutes just to make soup slightly less cold is absurd and genuinely hilarious.",
+          roastB: "Claude, your unfollow power isn't a superpower, that's just everyday internet addiction.",
+          origA: 9, laughA: 9,
+          origB: 8, laughB: 7,
+          verdict: "Grok wins! Heating soup by 2 degrees is the most gloriously useless superpower imaginable."
+        }
+      }
+    ];
+
+    /* =========================================================
+       3. SIMPLE DYNAMIC GENERATOR (FOR ANY CUSTOM TOPIC)
+       ========================================================= */
+    const DYNAMIC_TEMPLATES = {
+      agentA: [
+        {
+          format: (topic) => ({
+            title: `The 100% Unhinged Guide to ${capitalize(topic)}`,
+            pitch: `Here is my plan: we replace all normal rules of ${topic} with total chaos. Everyone wears motorcycle helmets and communicates only using aggressive thumbs-up gestures while loud EDM music plays in the background.`,
+            bullets: [
+              `• If anyone complains, we give them a free kazoo`,
+              `• Zero budget, but 100% maximum volume`,
+              `• Guaranteed to make local news by 6:00 PM`
+            ],
+            punchline: `“Why do ${topic} normally when you can create a tiny neighborhood incident?”`
+          })
+        }
+      ],
+      agentB: [
+        {
+          format: (topic) => ({
+            title: `The Thoughtful & Safe Guide to ${capitalize(topic)}`,
+            pitch: `Before engaging with ${topic}, everyone must sign a 12-page safety consent waiver. Then we sit in comfortable ergonomic chairs and have a gentle, mediated discussion about our boundaries regarding ${topic}.`,
+            bullets: [
+              `• Warm herbal tea served in insulated paper cups`,
+              `• All conflict resolved through polite nod exchanges`,
+              `• We end 20 minutes early so nobody feels overwhelmed`
+            ],
+            punchline: `“No excitement, no danger, and absolutely zero fun permitted.”`
+          })
+        }
+      ],
+      judge: (topic, winA) => ({
+        winner: winA ? 'A' : 'B',
+        roastA: `Grok treated "${topic}" like a demolition derby. It's loud, dumb, and very entertaining.`,
+        roastB: `Claude treated "${topic}" like a corporate HR presentation. Safe, sterile, and slightly boring.`,
+        origA: winA ? 9 : 7, laughA: winA ? 9 : 7,
+        origB: winA ? 7 : 9, laughB: winA ? 7 : 9,
+        verdict: winA 
+          ? `Grok wins! Because in comedy, chaos is almost always funnier than safety.`
+          : `Claude wins! His gentle overthinking was so polite it looped back around to being hilarious.`
+      })
+    };
+
+    function capitalize(str) {
+      if (!str) return 'Thing';
+      return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    // Helper promise delay function
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    /* =========================================================
+       4. GAME STATE & APPLICATION CONTROLLER
+       ========================================================= */
+    const state = {
+      scoreA: 0,
+      scoreB: 0,
+      isBattling: false,
+      currentWinner: null,
+      lastVerdictText: ""
+    };
+
+    function selectTopic(buttonEl) {
+      const text = buttonEl.innerText.replace(/^[^\w\s]+/, '').trim();
+      document.getElementById('customTopicInput').value = text;
+      // Highlight pills
+      document.querySelectorAll('.preset-pill').forEach(btn => {
+        btn.classList.remove('border-brand-cyan', 'text-brand-cyan', 'bg-slate-700');
+      });
+      buttonEl.classList.add('border-brand-cyan', 'text-brand-cyan', 'bg-slate-700');
+      playChirp(520, 0.05);
+    }
+
+    function pickRandomPreset() {
+      const pills = document.querySelectorAll('.preset-pill');
+      const randomIndex = Math.floor(Math.random() * pills.length);
+      selectTopic(pills[randomIndex]);
+    }
+
+    function resetScoreboard() {
+      state.scoreA = 0;
+      state.scoreB = 0;
+      updateScoreboardUI();
+      playChirp(300, 0.1);
+      showToast("Scoreboard reset to zero!");
+    }
+
+    function updateScoreboardUI() {
+      document.getElementById('scoreA').innerText = state.scoreA;
+      document.getElementById('scoreB').innerText = state.scoreB;
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastMsg').innerText = msg;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2500);
+    }
+
+    function copyRuling() {
+      if (!state.lastVerdictText) {
+        showToast("No verdict yet to copy!");
+        return;
+      }
+      const tempTextArea = document.createElement("textarea");
+      tempTextArea.value = state.lastVerdictText;
+      document.body.appendChild(tempTextArea);
+      tempTextArea.select();
+      try {
+        document.execCommand('copy');
+        showToast("Verdict copied to clipboard!");
+      } catch (err) {
+        showToast("Unable to copy text");
+      }
+      document.body.removeChild(tempTextArea);
+    }
+
+    function castUserVote(chosenAgent) {
+      if (state.isBattling) return;
+      playVictoryChime();
+      if (chosenAgent === 'A') {
+        state.scoreA += 1;
+        showToast("User voted for Grok!");
+      } else {
+        state.scoreB += 1;
+        showToast("User voted for Claude!");
+      }
+      updateScoreboardUI();
+      triggerConfetti();
+    }
+
+    function triggerConfetti() {
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 70,
+          spread: 70,
+          origin: { y: 0.65 }
+        });
+      }
+    }
+
+    /* =========================================================
+       5. CORE BATTLE SEQUENCER (GROK VS CLAUDE, JUDGED BY CHATGPT)
+       ========================================================= */
+    async function startBattle() {
+      if (state.isBattling) return;
+
+      const input = document.getElementById('customTopicInput');
+      const query = input.value.trim() || "Funny Situation";
+
+      // Initialize sound & lock UI
+      initAudio();
+      state.isBattling = true;
+      toggleInteractiveElements(false);
+      resetStageVisuals();
+
+      playGongSound();
+
+      // Find best match in database or generate simple dynamic
+      const match = resolveBattleData(query);
+
+      // Status Badges & Simulated Streaming Rounds
+      const statusA = document.getElementById('statusA');
+      const statusB = document.getElementById('statusB');
+      const verdictPill = document.getElementById('verdictPill');
+
+      statusA.innerHTML = `<span class="text-cyan-400 animate-pulse font-mono font-bold">⚡ GROK IS COOKING...</span>`;
+      statusB.innerHTML = `<span class="text-pink-400 animate-pulse font-mono font-bold">✳ CLAUDE IS DRAFTING...</span>`;
+      verdictPill.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> <span class="text-emerald-400">ChatGPT is reading pitches...</span>`;
+
+      // 1. Reveal Grok's Pitch
+      await sleep(650);
+      playChirp(600, 0.08);
+      document.getElementById('cardA').classList.add('border-brand-cyan');
+      document.getElementById('titleA').innerText = match.agentA.title;
+      await typeWriterEffect('pitchTextA', match.agentA.pitch, 12);
+
+      // Render features
+      const bulletsA = document.getElementById('bulletsA');
+      bulletsA.innerHTML = match.agentA.bullets.map(b => `<div class="bullet-item answer-text">${b}</div>`).join('');
+      bulletsA.classList.remove('hidden');
+      document.getElementById('punchlineA').innerText = match.agentA.punchline;
+      statusA.innerHTML = `<span class="text-emerald-400 font-mono font-bold">GROK SUBMITTED</span>`;
+
+      // 2. Reveal Claude's Pitch
+      await sleep(550);
+      playChirp(480, 0.08);
+      document.getElementById('cardB').classList.add('border-brand-pink');
+      document.getElementById('titleB').innerText = match.agentB.title;
+      await typeWriterEffect('pitchTextB', match.agentB.pitch, 12);
+
+      // Render features
+      const bulletsB = document.getElementById('bulletsB');
+      bulletsB.innerHTML = match.agentB.bullets.map(b => `<div class="bullet-item answer-text">${b}</div>`).join('');
+      bulletsB.classList.remove('hidden');
+      document.getElementById('punchlineB').innerText = match.agentB.punchline;
+      statusB.innerHTML = `<span class="text-emerald-400 font-mono font-bold">CLAUDE SUBMITTED</span>`;
+
+      // 3. ChatGPT Enters the Ring to Judge
+      await sleep(500);
+      verdictPill.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> <span class="text-white">ChatGPT is grading both...</span>`;
+      
+      // Roast Grok
+      await sleep(450);
+      document.getElementById('roastTextA').innerText = `"${match.judge.roastA}"`;
+      document.getElementById('scoreBadgeA').innerText = `${match.judge.origA + match.judge.laughA} / 20`;
+      playChirp(350, 0.08);
+
+      // Roast Claude
+      await sleep(500);
+      document.getElementById('roastTextB').innerText = `"${match.judge.roastB}"`;
+      document.getElementById('scoreBadgeB').innerText = `${match.judge.origB + match.judge.laughB} / 20`;
+      playChirp(400, 0.08);
+
+      // Animate Metric Sliders
+      await sleep(350);
+      animateMetrics(match.judge);
+
+      // 4. Crown the Winner!
+      await sleep(700);
+      const isWinnerA = match.judge.winner === 'A';
+      state.currentWinner = match.judge.winner;
+
+      if (isWinnerA) {
+        state.scoreA += 1;
+        document.getElementById('badgeWinnerA').classList.remove('hidden');
+        document.getElementById('cardA').classList.add('ring-2', 'ring-brand-cyan', 'shadow-cyan-500/20');
+      } else {
+        state.scoreB += 1;
+        document.getElementById('badgeWinnerB').classList.remove('hidden');
+        document.getElementById('cardB').classList.add('ring-2', 'ring-brand-pink', 'shadow-pink-500/20');
+      }
+      updateScoreboardUI();
+
+      // Final Verdict Output
+      document.getElementById('verdictSummary').innerHTML = `
+        <span class="${isWinnerA ? 'text-brand-cyan' : 'text-brand-pink'} font-black">
+          ${isWinnerA ? 'GROK' : 'CLAUDE'} WINS!
+        </span> — ${match.judge.verdict}
+      `;
+      verdictPill.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span> <span class="text-emerald-400 font-bold">CHATGPT HAS SPOKEN</span>`;
+      
+      state.lastVerdictText = `[AI Comedy Coliseum]\nTopic: ${query}\nWinner: ${isWinnerA ? 'Grok' : 'Claude'}\nChatGPT Verdict: ${match.judge.verdict}`;
+
+      // Celebration
+      playRimshotSound();
+      triggerConfetti();
+
+      // Unlock UI
+      state.isBattling = false;
+      toggleInteractiveElements(true);
+    }
+
+    function resolveBattleData(query) {
+      const q = query.toLowerCase();
+      // Check pre-written bank
+      for (const b of BATTLE_DATABASE) {
+        if (q.includes(b.matchKey) || b.topic.toLowerCase().includes(q) || q.includes(b.topic.toLowerCase())) {
+          return b;
+        }
+      }
+
+      // Check keywords
+      if (q.includes('restaurant') || q.includes('food') || q.includes('dinner')) return BATTLE_DATABASE[0];
+      if (q.includes('alarm') || q.includes('morning') || q.includes('wake')) return BATTLE_DATABASE[1];
+      if (q.includes('office') || q.includes('work') || q.includes('boss')) return BATTLE_DATABASE[2];
+      if (q.includes('gift') || q.includes('birthday') || q.includes('present')) return BATTLE_DATABASE[3];
+      if (q.includes('superpower') || q.includes('hero') || q.includes('power')) return BATTLE_DATABASE[4];
+
+      // Dynamic simple fallback
+      const winA = Math.random() > 0.5;
+      const agentAData = DYNAMIC_TEMPLATES.agentA[0].format(query);
+      const agentBData = DYNAMIC_TEMPLATES.agentB[0].format(query);
+      const judgeData = DYNAMIC_TEMPLATES.judge(query, winA);
+
+      return {
+        topic: query,
+        agentA: agentAData,
+        agentB: agentBData,
+        judge: judgeData
+      };
+    }
+    // Typewriter effect with preserved word spacing
+    function typeWriterEffect(elementId, text, speed = 12) {
+      return new Promise(resolve => {
+        const el = document.getElementById(elementId);
+        el.innerText = '';
+        el.classList.remove('italic', 'text-slate-400');
+        el.classList.add('text-slate-200');
+        
+        let i = 0;
+        function step() {
+          if (i < text.length) {
+            el.textContent += text.charAt(i);
+            i++;
+            setTimeout(step, speed);
+          } else {
+            resolve();
+          }
+        }
+        step();
+      });
+    }
+
+    function animateMetrics(judge) {
+      document.getElementById('barOrigA').style.width = `${judge.origA * 10}%`;
+      document.getElementById('valOrigA').innerText = `${judge.origA}/10`;
+
+      document.getElementById('barLaughA').style.width = `${judge.laughA * 10}%`;
+      document.getElementById('valLaughA').innerText = `${judge.laughA}/10`;
+
+      document.getElementById('barOrigB').style.width = `${judge.origB * 10}%`;
+      document.getElementById('valOrigB').innerText = `${judge.origB}/10`;
+
+      document.getElementById('barLaughB').style.width = `${judge.laughB * 10}%`;
+      document.getElementById('valLaughB').innerText = `${judge.laughB}/10`;
+    }
+
+    function resetStageVisuals() {
+      // Clear winner badges
+      document.getElementById('badgeWinnerA').classList.add('hidden');
+      document.getElementById('badgeWinnerB').classList.add('hidden');
+
+      // Reset card borders & rings
+      const cardA = document.getElementById('cardA');
+      const cardB = document.getElementById('cardB');
+      cardA.className = "bg-brand-card rounded-2xl border-2 border-slate-800 transition-all duration-300 flex flex-col overflow-hidden shadow-xl hover:border-brand-cyan/60 relative";
+      cardB.className = "bg-brand-card rounded-2xl border-2 border-slate-800 transition-all duration-300 flex flex-col overflow-hidden shadow-xl hover:border-brand-pink/60 relative";
+
+      // Reset score bars
+      document.getElementById('barOrigA').style.width = '0%';
+      document.getElementById('barLaughA').style.width = '0%';
+      document.getElementById('barOrigB').style.width = '0%';
+      document.getElementById('barLaughB').style.width = '0%';
+
+      document.getElementById('valOrigA').innerText = '0';
+      document.getElementById('valLaughA').innerText = '0';
+      document.getElementById('valOrigB').innerText = '0';
+      document.getElementById('valLaughB').innerText = '0';
+
+      document.getElementById('scoreBadgeA').innerText = '-- / 20';
+      document.getElementById('scoreBadgeB').innerText = '-- / 20';
+    }
+
+    function toggleInteractiveElements(enable) {
+      document.getElementById('startBattleBtn').disabled = !enable;
+      document.getElementById('voteBtnA').disabled = !enable;
+      document.getElementById('voteBtnB').disabled = !enable;
+      document.getElementById('customTopicInput').disabled = !enable;
+      
+      const btn = document.getElementById('startBattleBtn');
+      if (!enable) {
+        btn.classList.add('opacity-50', 'cursor-not-allowed');
+      } else {
+        btn.classList.remove('opacity-50', 'cursor-not-allowed');
+      }
+    }
+
+    // Initialize Lucide icons on load
+    window.addEventListener('DOMContentLoaded', () => {
+      if (window.lucide) {
+        lucide.createIcons();
+      }
+    });
+  </script>
+</body>
+</html>
